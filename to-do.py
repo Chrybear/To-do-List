@@ -66,6 +66,7 @@ if __name__ == '__main__':
                                bd=0,
                                highlightthickness=0,
                                activestyle="none",
+                               selectmode="multiple"
                                )
     task_box.pack(side="left", expand=True)
     # Add scroll-bars to the task box
@@ -82,12 +83,12 @@ if __name__ == '__main__':
     # Function to empty and draw the task list
     def draw_tasks(show_complete=False):
         # First, clear out the listbox
-        task_box.delete(0, tkinter.END)
+        task_box.delete(0, 'end')
         for x in cur_list.values():
             if show_complete and x.completed:
-                task_box.insert(tkinter.END, x.val)
+                task_box.insert('end', x.val)
             elif not show_complete and not x.completed:
-                task_box.insert(tkinter.END, x.val)
+                task_box.insert('end', x.val)
     draw_tasks()
 
     # Task label and entry
@@ -109,22 +110,21 @@ if __name__ == '__main__':
             task = task[:51]
             cur_list[task] = (Entry(val=task))
             save_list(cur_list)
-            # Update the list of tasks
-            task_box.insert(tkinter.END, task)
-            task_entry.delete(0, tkinter.END)  # Reset the entry text box
+            # Update the list of tasks (if we're showing un-completed)
+            if "Show Completed" == change_view_button.cget('text'):
+                task_box.insert('end', task)
+            task_entry.delete(0, 'end')  # Reset the entry text box
 
     # Function to mark the current selected task as complete
     def complete_task():
-        cur_index = task_box.curselection()
-        if cur_index:
-            task_val = task_box.get(cur_index[0], cur_index[0])[0]
-            if cur_list.get(task_val, False):
+        cur_tasks = [task_box.get(x, x)[0] for x in task_box.curselection()]
+        for task in cur_tasks:
+            if cur_list.get(task, False):
                 # Mark this one as complete
-                cur_list[task_val].completed = True
-                # Remove it from the listbox
-                task_box.delete(cur_index[0], cur_index[0])
-                # Update saved list
-                save_list(cur_list)
+                cur_list[task].completed = True
+        # After we finish, save list and re-draw task list
+        save_list(cur_list)
+        draw_tasks(False if "Show Completed" == change_view_button.cget('text') else True)
 
     # Function to swap to viewing completed/un-completed tasks
     def swap_view():
@@ -137,19 +137,14 @@ if __name__ == '__main__':
 
     # Function to delete a task
     def delete_task():
-        cur_task = task_box.curselection()
-        if cur_task:
-            task_val = task_box.get(cur_task[0], cur_task[0])[0]
-            if task_val in cur_list:
-                # Remove from the list
-                del cur_list[task_val]
-                # Remove from the task box
-                task_box.delete(cur_task[0], cur_task[0])
-                # Update tasks shown
-                # makes sure we're showing the current view
-                draw_tasks("Show Un-completed" == change_view_button.cget('text'))
-                # Save tasks
-                save_list(cur_list)
+        cur_tasks = [task_box.get(x, x)[0] for x in task_box.curselection()]
+        for task in cur_tasks:
+            if cur_list.get(task, False):
+                # Delete this task
+                del cur_list[task]
+        # After we finish, save list and re-draw task list
+        save_list(cur_list)
+        draw_tasks(False if "Show Completed" == change_view_button.cget('text') else True)
 
     # Function to clear out completed tasks
     def clear_completed():
