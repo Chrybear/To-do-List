@@ -9,16 +9,17 @@ import pickle
 import customtkinter as tk
 
 
-# Object for a list entry
+# Object for a task item
 # Current implementation would work with just a hash table and does not need a custom object.
 # However, using an object opens possibilities for adding additional functionality, such as task priority, for a task.
-class Entry:
+class Task:
     def __init__(self, val="", completed=False):
         self.val = val
         self.completed = completed
 
 
-# Function to get saved list (if one exists). If no such file exists, returns empty hash table
+# Function to get saved list (if one exists). If no such file exists, returns empty hash table.
+# Reads from whatever location 'to-do.py' is currently located in.
 def get_list():
     if exists('to-do.pkl'):
         return pickle.load(open('to-do.pkl', 'rb'))
@@ -26,7 +27,8 @@ def get_list():
         return {}
 
 
-# Function to save the current state of the list !! Will override whatever is currently saved
+# Function to save the current state of the list !! Will override whatever is currently saved !!
+# Saves to whatever location 'to-do.py' is currently located in.
 def save_list(lis: list):
     pickle.dump(lis, open('to-do.pkl', 'wb'))  # Will create new file if one does not currently exist
 
@@ -38,7 +40,7 @@ def print_list(lis):
 
 
 if __name__ == '__main__':
-    # On startup, load list if one already exists, else initialize an empty list
+    # On startup, load task hash table if one already exists, else initialize an empty hash table
     cur_list = get_list()
     # for i in range(100):
     #     cur_list[str(i)] = Entry(val=str(i))
@@ -51,7 +53,15 @@ if __name__ == '__main__':
     root.title("To-do List")
     # root.geometry("900x750")
     frame = tk.CTkFrame(master=root)
-    frame.pack(pady=10, padx=10, fill="both", expand=True)
+    frame.pack(pady=10, padx=10, ipadx=10, fill="both", expand=True)
+
+    # Label to display if we are looking at tasks that have/have not been done
+    displaying_label = tk.CTkLabel(master=frame,
+                                   text_color="#9900cc",
+                                   text="To-do",
+                                   font=("Calibri", 32, "bold")
+                                   )
+    displaying_label.pack()
 
     task_frame = tk.CTkFrame(master=frame, fg_color="transparent")
     task_frame.pack(anchor="center", expand=True)
@@ -61,7 +71,7 @@ if __name__ == '__main__':
     # List of our current tasks
     task_box = tkinter.Listbox(master=task_box_frame,
                                width=40,
-                               font=("sans-serif", 20, "bold"),
+                               font=("Calibri", 20, "bold"),
                                bg="#ffccff",
                                bd=0,
                                highlightthickness=0,
@@ -102,18 +112,21 @@ if __name__ == '__main__':
     task_entry.pack(pady=5, padx=10, side=tkinter.LEFT)
 
     # Function to add a new task to the current task list
-    def add_task():
+    def add_task(event=None):  # We need a dummy parameter to make hitting 'enter' on keyboard work
         task = task_entry.get().strip()  # We want to remove redundant spaces/blank entries
         if task and task not in cur_list:
             # Need to account for rabble-rousers that may enter very long tasks
             # We will cut tasks down to 50 chars at most
-            task = task[:51]
-            cur_list[task] = (Entry(val=task))
+            # This just makes sure that string length will be max 50 characters long (including spaces)
+            task = task[:51]  # If splicing with index > length of string, python treats it as simply the full string
+            cur_list[task] = (Task(val=task))
             save_list(cur_list)
             # Update the list of tasks (if we're showing un-completed)
-            if "Show Completed" == change_view_button.cget('text'):
+            if "To-do" == displaying_label.cget('text'):
                 task_box.insert('end', task)
             task_entry.delete(0, 'end')  # Reset the entry text box
+
+    root.bind('<Return>', add_task)  # This enables user to simply hit 'Enter' instead of pressing 'Add' button
 
     # Function to mark the current selected task as complete
     def complete_task():
@@ -122,18 +135,20 @@ if __name__ == '__main__':
             if cur_list.get(task, False):
                 # Mark this one as complete
                 cur_list[task].completed = True
-        # After we finish, save list and re-draw task list
+        # After we finish, save list and re-draw task list (if we're viewing un-finished tasks)
         save_list(cur_list)
-        draw_tasks(False if "Show Completed" == change_view_button.cget('text') else True)
+        draw_tasks(False if "To-do" == displaying_label.cget('text') else True)
 
     # Function to swap to viewing completed/un-completed tasks
     def swap_view():
-        show_complete = False if "Show Completed" == change_view_button.cget('text') else True
+        show_complete = False if "To-do" == displaying_label.cget('text') else True
         draw_tasks(not show_complete)
         if show_complete:
             change_view_button.configure(text="Show Completed")
+            displaying_label.configure(text="To-do")
         else:
             change_view_button.configure(text="Show Un-completed")
+            displaying_label.configure(text="Finished Tasks")
 
     # Function to delete a task
     def delete_task():
@@ -144,7 +159,7 @@ if __name__ == '__main__':
                 del cur_list[task]
         # After we finish, save list and re-draw task list
         save_list(cur_list)
-        draw_tasks(False if "Show Completed" == change_view_button.cget('text') else True)
+        draw_tasks(False if "To-do" == displaying_label.cget('text') else True)
 
     # Function to clear out completed tasks
     def clear_completed():
@@ -155,7 +170,7 @@ if __name__ == '__main__':
         # Save list
         save_list(cur_list)
         # Update view
-        draw_tasks("Show Un-completed" == change_view_button.cget('text'))
+        draw_tasks("Finished Tasks" == displaying_label.cget('text'))
 
     # Button frame
     button_frame = tk.CTkFrame(master=task_frame,
