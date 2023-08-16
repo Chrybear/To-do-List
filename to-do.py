@@ -137,11 +137,11 @@ if __name__ == '__main__':
                 cur_list[task].completed = True
         # After we finish, save list and re-draw task list (if we're viewing un-finished tasks)
         save_list(cur_list)
-        draw_tasks(False if "To-do" == displaying_label.cget('text') else True)
+        draw_tasks("Finished Tasks" == displaying_label.cget('text'))
 
     # Function to swap to viewing completed/un-completed tasks
     def swap_view():
-        show_complete = False if "To-do" == displaying_label.cget('text') else True
+        show_complete = "Finished Tasks" == displaying_label.cget('text')
         draw_tasks(not show_complete)
         if show_complete:
             change_view_button.configure(text="Show Completed")
@@ -159,7 +159,7 @@ if __name__ == '__main__':
                 del cur_list[task]
         # After we finish, save list and re-draw task list
         save_list(cur_list)
-        draw_tasks(False if "To-do" == displaying_label.cget('text') else True)
+        draw_tasks("Finished Tasks" == displaying_label.cget('text'))
 
     # Function to clear out completed tasks
     def clear_completed():
